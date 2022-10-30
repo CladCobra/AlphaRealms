@@ -92,6 +92,8 @@ public class PlayerController : MonoBehaviour {
 
     public void Move(Vector2 input) {
 
+        Debug.Log(input);
+
         movementDirection = transform.forward * input.y + transform.right * input.x;
 
         if (isGrounded && isSprinting) {
@@ -111,10 +113,10 @@ public class PlayerController : MonoBehaviour {
 
     public void Look(Vector2 input) {
 
-        this.mouseInput = input;
+        float mouseX = input.x * xSensitivity / 100;
+        float mouseY = input.y * ySensitivity / 100;
 
-        float mouseX = input.x * xSensitivity * Time.smoothDeltaTime;
-        float mouseY = input.y * ySensitivity * Time.smoothDeltaTime;
+        mouseInput = new Vector2(mouseX, mouseY);
 
         if (invertLookX) {
 
@@ -183,7 +185,7 @@ public class PlayerController : MonoBehaviour {
 
         if (isGrounded) {
 
-            if (rb.velocity.x > 0.1f || rb.velocity.z > 0.1f) {
+            if (movementDirection != Vector3.zero) {
 
                 timer += (isSprinting ? sprintBobSpeed : walkBobSpeed) * Time.deltaTime;
                 cameraPosition.localPosition = new Vector3(

@@ -42,7 +42,7 @@ public class PlayerInteract : MonoBehaviour {
 
                 playerUI.UpdateInteractText(interactable.interactMessage);
 
-                if (inputManager.onFoot.Interact.triggered) {
+                if (inputManager.playerInput.Player.Interact.triggered) {
 
                     interactable.BaseInteract();
 
