@@ -44,6 +44,7 @@ public class InputManager : MonoBehaviour {
         playerInput.Player.Sprint.performed += ctx => playerController.StartSprint();
         playerInput.Player.Sprint.canceled += ctx => playerController.StopSprint();
         playerInput.Player.Jump.performed += ctx => playerController.Jump();
+        playerInput.Player.Crouch.performed += ctx => playerController.Crouch();
         playerInput.Weapon.Shoot.performed += ctx => gunController.Shoot();
         playerInput.Weapon.ADS.performed += ctx => gunController.ToggleADS();
         playerInput.Weapon.ADS.canceled += ctx => gunController.ToggleADS();

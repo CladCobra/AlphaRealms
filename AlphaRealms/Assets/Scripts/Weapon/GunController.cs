@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,9 +10,9 @@ public class GunController : MonoBehaviour {
     [SerializeField] private PlayerController playerController;
 
     [Header("Settings")]
-    [SerializeField] private float fireRate;
-    [SerializeField] private int magazineSize;
-    [SerializeField] private int reservedAmmoCapacity;
+    [SerializeField][Range(0, 25)] private float fireRate;
+    [SerializeField][Range(0, 999)] private int magazineSize;
+    [SerializeField][Range(0, 999)] private int reservedAmmoCapacity;
 
     [Header("Shooting")]
     public bool isAutomatic;
@@ -19,19 +20,36 @@ public class GunController : MonoBehaviour {
     private int reservedAmmo;
     private bool canShoot;
 
-    [Header("Aiming")]
+    [Header("ADS")]
     [SerializeField] private Transform ADSPoint;
-    [SerializeField] private float ADSSmoothing;
+    [SerializeField][Range(0, 10)] private float ADSSmoothing;
+    [HideInInspector] public bool isADS;
     private Vector3 initialPosition;
-    private bool isADS;
+
+    [Header("Jump Effect")]
+    [SerializeField][Range(0, 10)] private float jumpEffectSmoothing;
 
     [Header("Sway")]
-    [SerializeField] private float swayAmount;
+    [SerializeField][Range(-10, 10)] private float swayAmount;
+
+    [Header("Weapon Bobbing")]
+    [SerializeField][Range(0, 50)] private float walkBobSpeed;
+    [SerializeField][Range(0, 10)] private float walkBobAmount;
+    [SerializeField][Range(0, 50)] private float sprintBobSpeed;
+    [SerializeField][Range(0, 10)] private float sprintBobAmount;
+    [SerializeField][Range(0, 50)] private float crouchBobSpeed;
+    [SerializeField][Range(0, 10)] private float crouchBobAmount;
+    [SerializeField][Range(0, 50)] private float ADSBobSpeed;
+    [SerializeField][Range(0, 10)] private float ADSBobAmount;
+    [SerializeField][Range(0, 50)] private float ADSCrouchBobSpeed;
+    [SerializeField][Range(0, 10)] private float ADSCrouchBobAmount;
+    private float defaultYPosition;
+    private float timer;
 
     [Header("Muzzle Flash")]
     [SerializeField] private Image muzzleFlash;
     [SerializeField] private Sprite[] flashes;
-    [SerializeField] private float muzzleFlashLength;
+    [SerializeField][Range(0, 1)] private float muzzleFlashLength;
 
     private void Start() {
 
@@ -47,7 +65,8 @@ public class GunController : MonoBehaviour {
     private void Update() {
 
         CalculateSway();
-        ADS();
+        HandleGunPosition();
+        HandleWeaponBob();
 
     }
 
@@ -65,15 +84,6 @@ public class GunController : MonoBehaviour {
     public void ToggleADS() {
 
         isADS = !isADS;
-
-    }
-
-    public void ADS() {
-
-        Vector3 target = (isADS ? ADSPoint.localPosition : initialPosition);
-
-        Vector3 targetPosition = Vector3.Lerp(transform.localPosition, target, ADSSmoothing * Time.deltaTime);
-        transform.localPosition = targetPosition;
 
     }
 
@@ -97,6 +107,21 @@ public class GunController : MonoBehaviour {
         }
     }
 
+    private void HandleGunPosition() {
+
+        if (isADS) {
+
+            transform.localPosition = Vector3.Lerp(transform.localPosition, ADSPoint.localPosition, ADSSmoothing * Time.deltaTime);
+            transform.localRotation = Quaternion.Slerp(transform.localRotation, Quaternion.identity, ADSSmoothing * Time.deltaTime);
+
+        } else {
+
+            transform.localPosition = Vector3.Lerp(transform.localPosition, initialPosition, ADSSmoothing * Time.deltaTime);
+            transform.localRotation = Quaternion.Slerp(transform.localRotation, Quaternion.identity, ADSSmoothing * Time.deltaTime);
+
+        }
+    }
+
     private void CalculateSway() {
 
         transform.localPosition += (Vector3) playerController.mouseInput * swayAmount / 1000;
@@ -107,6 +132,54 @@ public class GunController : MonoBehaviour {
 
         transform.localPosition -= Vector3.forward * 0.1f;
 
+    }
+
+    private void HandleWeaponBob() {
+
+        if (Mathf.Abs(playerController.rb.velocity.magnitude) > 0.1f && !isADS) {
+
+            if (playerController.isGrounded && playerController.isSprinting && !playerController.isCrouching && !isADS) {
+
+                timer += sprintBobSpeed * Time.deltaTime;
+                transform.parent.localPosition = new Vector3(
+                    transform.parent.transform.localPosition.x,
+                    defaultYPosition + Mathf.Sin(timer) * sprintBobAmount,
+                    transform.parent.transform.localPosition.z);
+
+            } else if (playerController.isGrounded && !playerController.isSprinting && !playerController.isCrouching && !isADS) {
+
+                timer += walkBobSpeed * Time.deltaTime;
+                transform.parent.localPosition = new Vector3(
+                    transform.parent.transform.localPosition.x,
+                    defaultYPosition + Mathf.Sin(timer) * walkBobAmount,
+                    transform.parent.transform.localPosition.z);
+
+            } else if (playerController.isGrounded && playerController.isCrouching && !isADS) {
+
+                timer += crouchBobSpeed * Time.deltaTime;
+                transform.parent.localPosition = new Vector3(
+                    transform.parent.transform.localPosition.x,
+                    defaultYPosition + Mathf.Sin(timer) * crouchBobAmount,
+                    transform.parent.transform.localPosition.z);
+
+            } else if (playerController.isGrounded && !playerController.isCrouching && isADS) {
+
+                timer += ADSBobSpeed * Time.deltaTime;
+                transform.parent.localPosition = new Vector3(
+                    transform.parent.transform.localPosition.x,
+                    defaultYPosition + Mathf.Sin(timer) * ADSBobAmount,
+                    transform.parent.transform.localPosition.z);
+
+            } else if (playerController.isGrounded && playerController.isCrouching && isADS) {
+
+                timer += ADSCrouchBobSpeed * Time.deltaTime;
+                transform.parent.localPosition = new Vector3(
+                    transform.parent.transform.localPosition.x,
+                    defaultYPosition + Mathf.Sin(timer) * ADSCrouchBobAmount,
+                    transform.parent.transform.localPosition.z);
+
+            }
+        }
     }
 
     IEnumerator ShootGun() {

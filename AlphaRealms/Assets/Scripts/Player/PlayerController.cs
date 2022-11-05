@@ -5,12 +5,19 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour {
 
     [Header("References")]
+    [SerializeField] private GunController gunController;
     [SerializeField] private Transform cameraPosition;
     [SerializeField] private Transform feet;
-    private Rigidbody rb;
+    [HideInInspector] public Rigidbody rb;
+    private CapsuleCollider collider;
 
     [Header("Movement")]
-    [SerializeField][Range(0, 50)] private float walkSpeed;
+    [SerializeField][Range(0, 100)] private float walkSpeed;
+    [SerializeField][Range(0, 100)] private float sprintSpeed;
+    [SerializeField][Range(0, 100)] private float crouchSpeed;
+    [SerializeField][Range(0, 100)] private float ADSSpeed;
+    [SerializeField][Range(0, 100)] private float ADSCrouchSpeed;
+    [SerializeField][Range(0, 100)] private float airSpeed;
     [HideInInspector] public Vector3 movementDirection;
     private float currentSpeed;
 
@@ -27,30 +34,29 @@ public class PlayerController : MonoBehaviour {
     private float yRotation;
 
     [Header("Sprinting")]
-    [SerializeField][Range(0, 50)] private float sprintSpeed;
     [HideInInspector] public bool isSprinting;
 
     [Header("Jumping")]
-    [SerializeField][Range(0, 20)] private float jumpHeight;
-    [SerializeField][Range(0, 3)] private float airMultiplier;
+    [SerializeField][Range(0, 50)] private float jumpHeight;
+    [SerializeField][Range(0, 10)] private float airMultiplier;
 
-    [Header("Headbobbing")]
-    [SerializeField] private float walkBobSpeed;
-    [SerializeField] private float walkBobAmount;
-    [SerializeField] private float sprintBobSpeed;
-    [SerializeField] private float sprintBobAmount;
-    private float defaultYPosition;
-    private float timer;
+    [Header("Crouching")]
+    [SerializeField][Range(0, 10)] private float crouchHeight;
+    [HideInInspector] public bool isCrouching;
+    private float initialScale;
+    private float standHeight;
 
     [Header("Ground Check")]
-    [SerializeField][Range(0, 3)] private float groundCheckRadius;
+    [SerializeField][Range(0, 10)] private float groundCheckRadius;
     [SerializeField] private LayerMask environmentMask;
-    private bool isGrounded;
+    [HideInInspector] public bool isGrounded;
 
     [Header("Drag Control")]
     [SerializeField][Range(0, 10)] private float groundDrag;
 
     private void Start() {
+
+        collider = GetComponent<CapsuleCollider>();
 
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
@@ -58,7 +64,8 @@ public class PlayerController : MonoBehaviour {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        defaultYPosition = cameraPosition.transform.localPosition.y;
+        initialScale = transform.localScale.y;
+        standHeight = collider.height;
 
     }
 
@@ -70,8 +77,6 @@ public class PlayerController : MonoBehaviour {
         transform.rotation = Quaternion.Euler(0, yRotation, 0);
 
         ControlSpeed();
-
-        HandleHeadbob();
 
         if (isGrounded) {
 
@@ -92,21 +97,31 @@ public class PlayerController : MonoBehaviour {
 
     public void Move(Vector2 input) {
 
-        Debug.Log(input);
-
         movementDirection = transform.forward * input.y + transform.right * input.x;
 
-        if (isGrounded && isSprinting) {
+        if (isGrounded && isSprinting && !isCrouching && !gunController.isADS) {
 
             currentSpeed = sprintSpeed * 10f;
 
-        } else if (isGrounded && !isSprinting) {
+        } else if (isGrounded && !isSprinting && !isCrouching && !gunController.isADS) {
 
             currentSpeed = walkSpeed * 10f;
 
+        } else if (isGrounded && isCrouching && !gunController.isADS) {
+
+            currentSpeed = crouchSpeed * 10f;
+
+        } else if (isGrounded && !isCrouching && gunController.isADS) {
+
+            currentSpeed = ADSSpeed * 10f;
+
+        } else if (isGrounded && isCrouching && gunController.isADS) {
+
+            currentSpeed = ADSCrouchSpeed * 10f;
+
         } else if (!isGrounded) {
 
-            currentSpeed = walkSpeed * 10f * airMultiplier;
+            currentSpeed = airSpeed * airMultiplier * 10f;
 
         }
     }
@@ -172,6 +187,13 @@ public class PlayerController : MonoBehaviour {
 
     public void Jump() {
 
+        if (isCrouching) {
+
+            Crouch();
+            return;
+
+        }
+
         if (isGrounded) {
 
             rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
@@ -181,17 +203,21 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
-    private void HandleHeadbob() {
+    public void Crouch() {
 
         if (isGrounded) {
 
-            if (movementDirection != Vector3.zero) {
+            isCrouching = !isCrouching;
 
-                timer += (isSprinting ? sprintBobSpeed : walkBobSpeed) * Time.deltaTime;
-                cameraPosition.localPosition = new Vector3(
-                    cameraPosition.transform.localPosition.x,
-                    defaultYPosition + Mathf.Sin(timer) * (isSprinting ? sprintBobAmount : walkBobAmount),
-                    cameraPosition.transform.localPosition.z);
+            if (isCrouching) {
+
+                collider.height = crouchHeight;
+                transform.localScale = new Vector3(transform.localScale.x, crouchHeight, transform.localScale.z);
+
+            } else {
+
+                collider.height = standHeight;
+                transform.localScale = new Vector3(transform.localScale.x, initialScale, transform.localScale.z);
 
             }
         }
