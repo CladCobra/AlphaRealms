@@ -6,29 +6,30 @@ public class PlayerController : MonoBehaviour {
 
     [Header("References")]
     [SerializeField] private GunController gunController;
-    [SerializeField] private Transform cameraPosition;
     [SerializeField] private Transform feet;
+    public Camera camera;
+    public Transform cameraPosition;
     [HideInInspector] public Rigidbody rb;
     private CapsuleCollider collider;
 
     [Header("Movement")]
-    [SerializeField][Range(0, 100)] private float walkSpeed;
-    [SerializeField][Range(0, 100)] private float sprintSpeed;
-    [SerializeField][Range(0, 100)] private float crouchSpeed;
-    [SerializeField][Range(0, 100)] private float ADSSpeed;
-    [SerializeField][Range(0, 100)] private float ADSCrouchSpeed;
-    [SerializeField][Range(0, 100)] private float airSpeed;
+    [SerializeField][Range(0f, 25f)] private float walkSpeed;
+    [SerializeField][Range(0f, 25f)] private float sprintSpeed;
+    [SerializeField][Range(0f, 25f)] private float crouchSpeed;
+    [SerializeField][Range(0f, 25f)] private float ADSSpeed;
+    [SerializeField][Range(0f, 25f)] private float ADSCrouchSpeed;
+    [SerializeField][Range(0f, 25f)] private float airSpeed;
     [HideInInspector] public Vector3 movementDirection;
     private float currentSpeed;
 
     [Header("Looking")]
-    [SerializeField][Range(0, 100)] private float xSensitivity;
-    [SerializeField][Range(0, 100)] private float ySensitivity;
-    [SerializeField][Range(0, 90)] private float topLookClamp;
-    [SerializeField][Range(0, 90)] private float bottomLookClamp;
+    [SerializeField][Range(0f, 100f)] private float xSensitivity;
+    [SerializeField][Range(0f, 100f)] private float ySensitivity;
+    [SerializeField][Range(0f, 90f)] private float topLookClamp;
+    [SerializeField][Range(0f, 90f)] private float bottomLookClamp;
     [Space]
-    [SerializeField] private bool invertLookX;
-    [SerializeField] private bool invertLookY;
+    public bool invertLookX;
+    public bool invertLookY;
     [HideInInspector] public Vector2 mouseInput;
     private float xRotation;
     private float yRotation;
@@ -37,22 +38,22 @@ public class PlayerController : MonoBehaviour {
     [HideInInspector] public bool isSprinting;
 
     [Header("Jumping")]
-    [SerializeField][Range(0, 50)] private float jumpHeight;
-    [SerializeField][Range(0, 10)] private float airMultiplier;
+    [SerializeField][Range(0f, 25f)] private float jumpHeight;
+    [SerializeField][Range(0f, 1f)] private float airMultiplier;
 
     [Header("Crouching")]
-    [SerializeField][Range(0, 10)] private float crouchHeight;
+    [SerializeField][Range(0f, 2f)] private float crouchHeight;
     [HideInInspector] public bool isCrouching;
     private float initialScale;
     private float standHeight;
 
     [Header("Ground Check")]
-    [SerializeField][Range(0, 10)] private float groundCheckRadius;
+    [SerializeField][Range(0f, 2f)] private float groundCheckRadius;
     [SerializeField] private LayerMask environmentMask;
     [HideInInspector] public bool isGrounded;
 
     [Header("Drag Control")]
-    [SerializeField][Range(0, 10)] private float groundDrag;
+    [SerializeField][Range(0f, 10f)] private float groundDrag;
 
     private void Start() {
 
@@ -60,9 +61,6 @@ public class PlayerController : MonoBehaviour {
 
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
 
         initialScale = transform.localScale.y;
         standHeight = collider.height;
@@ -126,6 +124,19 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
+    private void ControlSpeed() {
+
+        Vector3 flatVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+
+        if (flatVelocity.magnitude > currentSpeed) {
+
+            Vector3 limitedVelocity = flatVelocity.normalized * currentSpeed;
+
+            rb.velocity = new Vector3(limitedVelocity.x, rb.velocity.y, limitedVelocity.z);
+
+        }
+    }
+
     public void Look(Vector2 input) {
 
         float mouseX = input.x * xSensitivity / 100;
@@ -157,39 +168,23 @@ public class PlayerController : MonoBehaviour {
 
     }
 
-    private void ControlSpeed() {
+    public void ToggleSprint() {
 
-        Vector3 flatVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-
-        if (flatVelocity.magnitude > currentSpeed) {
-
-            Vector3 limitedVelocity = flatVelocity.normalized * currentSpeed;
-
-            rb.velocity = new Vector3(limitedVelocity.x, rb.velocity.y, limitedVelocity.z);
-
-        }
-    }
-
-    public void StartSprint() {
-
-        if (isGrounded) {
+        if (!isSprinting && isGrounded) {
 
             isSprinting = true;
 
+        } else {
+
+            isSprinting = false;
         }
-    }
-
-    public void StopSprint() {
-
-        isSprinting = false;
-
     }
 
     public void Jump() {
 
         if (isCrouching) {
 
-            Crouch();
+            ToggleCrouch();
             return;
 
         }
@@ -203,7 +198,7 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
-    public void Crouch() {
+    public void ToggleCrouch() {
 
         if (isGrounded) {
 

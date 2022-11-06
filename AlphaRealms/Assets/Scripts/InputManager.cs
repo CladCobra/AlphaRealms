@@ -7,20 +7,24 @@ public class InputManager : MonoBehaviour {
 
     [Header("References")]
     [SerializeField] private GunController gunController;
+    [SerializeField] private UIController UIController;
     public PlayerInput playerInput;
     private PlayerController playerController;
 
     [Header("Input Actions")]
     private InputActionMap playerMap;
     private InputActionMap weaponMap;
+    private InputActionMap menuMap;
 
     private void OnEnable() {
 
         playerMap = playerInput.Player;
         weaponMap = playerInput.Weapon;
+        menuMap = playerInput.Menu;
 
         playerMap.Enable();
         weaponMap.Enable();
+        menuMap.Disable();
 
     }
 
@@ -28,6 +32,7 @@ public class InputManager : MonoBehaviour {
 
         playerMap.Disable();
         weaponMap.Disable();
+        menuMap.Disable();
 
     }
 
@@ -41,14 +46,17 @@ public class InputManager : MonoBehaviour {
 
         playerController = GetComponent<PlayerController>();
 
-        playerInput.Player.Sprint.performed += ctx => playerController.StartSprint();
-        playerInput.Player.Sprint.canceled += ctx => playerController.StopSprint();
+        playerInput.Player.Sprint.performed += ctx => playerController.ToggleSprint();
+        playerInput.Player.Sprint.canceled += ctx => playerController.ToggleSprint();
         playerInput.Player.Jump.performed += ctx => playerController.Jump();
-        playerInput.Player.Crouch.performed += ctx => playerController.Crouch();
+        playerInput.Player.Crouch.performed += ctx => playerController.ToggleCrouch();
         playerInput.Weapon.Shoot.performed += ctx => gunController.Shoot();
         playerInput.Weapon.ADS.performed += ctx => gunController.ToggleADS();
         playerInput.Weapon.ADS.canceled += ctx => gunController.ToggleADS();
         playerInput.Weapon.Reload.performed += ctx => gunController.Reload();
+        playerInput.Player.PauseGame.performed += ctx => UIController.OpenPauseMenu();
+        playerInput.Menu.CloseMenu.performed += ctx => UIController.CloseCurrentMenu();
+        playerInput.Menu.Click.performed += ctx => UIController.PlayClickSound();
 
     }
 
