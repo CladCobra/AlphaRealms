@@ -7,10 +7,10 @@ public class PlayerController : MonoBehaviour {
     [Header("References")]
     [SerializeField] private GunController gunController;
     [SerializeField] private Transform feet;
-    public Camera camera;
+    public new Camera camera;
     public Transform cameraPosition;
     [HideInInspector] public Rigidbody rb;
-    private CapsuleCollider collider;
+    private new CapsuleCollider collider;
 
     [Header("Movement")]
     [SerializeField][Range(0f, 25f)] private float walkSpeed;
